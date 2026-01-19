@@ -110,7 +110,7 @@ export function TimelineControl({ currentDate, onDateChange }: TimelineControlPr
 
       <div className="mt-4 pt-4 border-t border-gray-200">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-600">Baseline: 2017-2019 average</span>
+          <span className="text-gray-600">Baseline: 2019 </span>
           <span className="text-gray-600">Showing difference from baseline</span>
         </div>
       </div>

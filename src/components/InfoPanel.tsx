@@ -70,7 +70,7 @@ export function InfoPanel({ selectedCity, currentDate, onClose }: InfoPanelProps
         {/* Current vs Baseline */}
         <div className="grid grid-cols-2 gap-4">
           <div className="p-3 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500">Baseline (2017-19)</p>
+            <p className="text-xs text-gray-500">Baseline (2019)</p>
             <p className="mt-1 text-xl">{baseline.meanValue.toFixed(1)}</p>
             <p className="text-xs text-gray-500">μg/m³</p>
           </div>
