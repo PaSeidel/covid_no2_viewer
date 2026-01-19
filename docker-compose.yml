@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    # volumes:
+    #   - ./src:/app/src  # Hot reload for development
+    #   - ./data:/app/data  # If you need persistent data
+    environment:
+      - NODE_ENV=development
+    command: npm run dev -- --host  # Dev override
