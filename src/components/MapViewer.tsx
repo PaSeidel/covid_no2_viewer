@@ -54,7 +54,7 @@ export function MapViewer({
 
     const measurementsWithDiff = currentMeasurements
       .map((m) => {
-        const baselineData = baseline.find(b => b.name === m.cityName);
+        const baselineData = baseline.find(b => b.cityName === m.cityName);
         if (!baselineData) {
           console.warn('No baseline data for city:', m.cityName);
           return null;}
