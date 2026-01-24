@@ -64,17 +64,29 @@ export function InfoPanel({ selectedCity, currentDate, onClose }: InfoPanelProps
       </div>
 
       <div className="space-y-4">
-        {/* Current vs Baseline */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500">Baseline (2019)</p>
-            <p className="mt-1 text-xl">{baseline.value.toFixed(6)}</p>
-            <p className="text-xs text-gray-500">mol/m²</p>
+        {/* NO2 Current vs Baseline */}
+        <div>
+          <p className="text-xs text-gray-500 mb-2">NO2 Levels</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500">Baseline (2019)</p>
+              <p className="mt-1 text-xl">{(baseline.value * 1e6).toFixed(2)}</p>
+              <p className="text-xs text-gray-500">μmol/m²</p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500">Current</p>
+              <p className="mt-1 text-xl">{(current.value * 1e6).toFixed(2)}</p>
+              <p className="text-xs text-gray-500">μmol/m²</p>
+            </div>
           </div>
+        </div>
+
+        {/* COVID-19 Incidence */}
+        <div>
+          <p className="text-xs text-gray-500 mb-2">COVID-19 Incidence (7-day)</p>
           <div className="p-3 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500">Current</p>
-            <p className="mt-1 text-xl">{current.value.toFixed(6)}</p>
-            <p className="text-xs text-gray-500">mol/m²</p>
+            <p className="mt-1 text-xl">{current.incidence.toFixed(1)}</p>
+            <p className="text-xs text-gray-500">per 100k population</p>
           </div>
         </div>
 
@@ -92,9 +104,9 @@ export function InfoPanel({ selectedCity, currentDate, onClose }: InfoPanelProps
           </div>
           <div className="flex items-baseline gap-2">
             <span className={`text-3xl ${isDecrease ? 'text-green-600' : 'text-orange-600'}`}>
-              {difference > 0 ? '+' : ''}{difference.toFixed(6)}
+              {difference * 1e6 > 0 ? '+' : ''}{(difference * 1e6).toFixed(2)}
             </span>
-            <span className="text-sm text-gray-600">mol/m²</span>
+            <span className="text-sm text-gray-600">μmol/m²</span>
           </div>
           <div className={`text-sm mt-1 ${isDecrease ? 'text-green-700' : 'text-orange-700'}`}>
             {percentageChange > 0 ? '+' : ''}{percentageChange.toFixed(1)}% change
