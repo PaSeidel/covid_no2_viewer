@@ -113,20 +113,12 @@ export function InfoPanel({ selectedCity, currentDate, onClose }: InfoPanelProps
           </div>
         </div>
 
-        {/* Statistical significance explanation */}
+        {/* Statistical interpretation */}
         <div className="pt-4 border-t border-gray-200">
           <div className="flex items-start gap-2 text-sm text-gray-600">
             <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <p>
-              {isSignificant ? (
-                <>
-                  The change is <strong>statistically significant</strong> (p &lt; 0.05).
-                </>
-              ) : (
-                <>
-                  The change is <strong>not statistically significant</strong> (p ≥ 0.05).
-                </>
-              )}
+              {current.interpretation}
             </p>
           </div>
         </div>
