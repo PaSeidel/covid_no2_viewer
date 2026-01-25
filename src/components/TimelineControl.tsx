@@ -6,7 +6,7 @@ interface TimelineControlProps {
   onDateChange: (date: Date) => void;
 }
 
-const START_DATE = new Date('2020-01-01');
+const START_DATE = new Date('2020-03-01');
 const END_DATE = new Date('2024-12-01');
 
 export function TimelineControl({ currentDate, onDateChange }: TimelineControlProps) {

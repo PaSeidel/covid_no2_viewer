@@ -83,7 +83,7 @@ export function InfoPanel({ selectedCity, currentDate, onClose }: InfoPanelProps
 
         {/* COVID-19 Incidence */}
         <div>
-          <p className="text-xs text-gray-500 mb-2">COVID-19 Incidence (7-day)</p>
+          <p className="text-xs text-gray-500 mb-2">Average 7-Day Incidence</p>
           <div className="p-3 bg-gray-50 rounded-lg">
             <p className="mt-1 text-xl">{current.incidence.toFixed(1)}</p>
             <p className="text-xs text-gray-500">per 100k population</p>

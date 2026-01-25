@@ -5,7 +5,7 @@ import { Legend } from './components/Legend';
 import { InfoPanel } from './components/InfoPanel';
 
 export default function App() {
-  const [currentDate, setCurrentDate] = useState<Date>(new Date('2020-01-01'));
+  const [currentDate, setCurrentDate] = useState<Date>(new Date('2020-03-01'));
   const [selectedCity, setSelectedCity] = useState<any>(null);
 
   return (

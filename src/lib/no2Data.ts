@@ -122,12 +122,49 @@ export function getPercentageChange(
 
 /**
  * Async version of getBaselineData that works with both modes
+ * COVID era: 2020-03 onwards, baseline is precovid average
+ * Precovid: before 2020-03, baseline is 2019
  */
 export async function getBaselineDataAsync(date: Date): Promise<CityTimepoint[]> {
   const source = getGeoTIFFDataSource();
-  const baseline_date = new Date(date);
-  baseline_date.setFullYear(2019);
-  return await source.getCurrentMeasurements(baseline_date);
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+  const isCovid = year > 2020 || (year === 2020 && month >= 3);
+  
+  if (!isCovid) {
+    // Precovid: baseline is 2019
+    const baseline_date = new Date(date);
+    baseline_date.setFullYear(2019);
+    return await source.getCurrentMeasurements(baseline_date);
+  }
+  
+  // COVID era: baseline is averaged from precovid months
+  const baselineMonths = [2019]; // 2019 always
+  if (month === 1) baselineMonths.push(2020);
+  if (month === 2) baselineMonths.push(2020);
+  
+  const allMeasurements: CityTimepoint[] = [];
+  for (const baselineYear of baselineMonths) {
+    const baseline_date = new Date(date);
+    baseline_date.setFullYear(baselineYear);
+    const measurements = await source.getCurrentMeasurements(baseline_date);
+    allMeasurements.push(...measurements);
+  }
+  
+  // Average by city name
+  const cityMap = new Map<string, CityTimepoint>();
+  allMeasurements.forEach(m => {
+    if (!cityMap.has(m.cityName)) {
+      cityMap.set(m.cityName, { ...m });
+    } else {
+      const existing = cityMap.get(m.cityName)!;
+      existing.value = (existing.value + m.value) / 2;
+      existing.incidence = (existing.incidence + m.incidence) / 2;
+      existing.pValue = Math.max(existing.pValue, m.pValue);
+    }
+  });
+  
+  return Array.from(cityMap.values());
 }
 
 /**
