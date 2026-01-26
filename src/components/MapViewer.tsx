@@ -4,10 +4,12 @@ import {
   getCurrentMeasurementsAsync,
   getBaselineDataAsync,
   getMeasurementDifference,
-  MAJOR_GERMAN_CITIES,
   getGridDataAsync,
   GridPoint,
+  City,
 } from "../lib/no2Data";
+import { GeoTIFFDataSource } from "../lib/geotiffDataSource";
+
 
 interface MapViewerProps {
   currentDate: Date;
@@ -43,6 +45,21 @@ export function MapViewer({
   >(new Map());
   const [measurements, setMeasurements] = useState<any[]>([]);
   const [gridData, setGridData] = useState<GridPoint[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+
+  // Load cities once on mount
+  useEffect(() => {
+    async function loadCities() {
+      const dataSource = new GeoTIFFDataSource({
+        mode: 'geotiff',
+        geotiffBaseUrl: '/data',
+        citiesDataUrl: '/city_data'
+      });
+      await dataSource.loadCities();
+      setCities(dataSource.getCities());
+    }
+    loadCities();
+  }, []);
 
   // Update measurements and grid when date changes
   useEffect(() => {
@@ -58,13 +75,16 @@ export function MapViewer({
         if (!baselineData) {
           console.warn('No baseline data for city:', m.cityName);
           return null;}
+        const city = cities.find((c) => c.name === m.cityName);
+        if (!city) {
+          console.warn('No city data for:', m.cityName, 'Available cities:', cities.map(c => c.name));
+          return null;
+        }
         return {
           ...m,
           difference: getMeasurementDifference(m, baselineData),
           isSignificant: m.pValue < 0.05,
-          city: MAJOR_GERMAN_CITIES.find(
-            (c) => c.name === m.cityName,
-          )
+          city
         };
       })
       .filter(Boolean);
@@ -77,7 +97,7 @@ export function MapViewer({
     setGridData(grid);
   }
     fetchData();
-  }, [currentDate]);
+  }, [currentDate, cities]);
 
   // Calculate tile coordinates from lat/lng
   const getTileCoordinates = (

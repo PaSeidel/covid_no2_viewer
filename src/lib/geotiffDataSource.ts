@@ -55,8 +55,8 @@ export class GeoTIFFDataSource {
    * Load baseline data (pre-COVID average)
    */
   async loadBaseline(date: Date): Promise<void> {
-    if (!this.config.baselineGeotiffUrl) {
-      throw new Error('Baseline GeoTIFF URL not configured');
+    if (!this.config.geotiffBaseUrl) {
+      throw new Error('GeoTIFF URL not configured');
     }
 
     const year = 2019;
