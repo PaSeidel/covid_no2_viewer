@@ -10,12 +10,17 @@ COPY package*.json ./
 COPY vite.config.ts ./
 COPY index.html ./  
 
-# Install dependencies
-RUN npm i
+# === FOR STARTUP WITH LOCAL DATA ===
+# Copy data from zip file and unzip
+RUN apk add --no-cache unzip
 
-# Copy source code
-COPY src ./src
+COPY data.zip /app/data.zip
+RUN mkdir -p public \
+    && unzip data.zip -d public \
+    && rm data.zip
+# === END ===
 
+# === FOR STARTUP WITH DATA FETCH ===
 # Copy Python preprocessing scripts
 # COPY data_preparation ./data_preparation
 
@@ -26,6 +31,14 @@ COPY src ./src
 # Copy startup script
 # COPY data-preparation.sh /usr/local/bin/
 # RUN chmod +x /usr/local/bin/data-preparation.sh
+# === END ===
+
+# Install dependencies
+RUN npm i
+
+# Copy source code
+COPY src ./src
+
 EXPOSE 3000
 
 # ENTRYPOINT ["data-preparation.sh"]
