@@ -283,5 +283,5 @@ def _generate_interpretation(is_significant, p_value, percent_change, cohens_d):
     # Direction
     direction = "decrease" if percent_change < 0 else "increase"
     
-    return f"{abs(percent_change):.1f}% {direction}, {sig_text}, {effect_text} (d={cohens_d:.2f})"
+    return f"{sig_text}, {effect_text} (d={cohens_d:.2f})"
 
