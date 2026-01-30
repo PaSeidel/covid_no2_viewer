@@ -159,10 +159,12 @@ export function rasterToGridPoints(
       
       // Calculate difference if baseline is provided
       let difference = 0;
+      let percentage_diff = 0;
       if (baselineData) {
         const baselineValue = baselineData[index];
         if (baselineValue !== -9999 && !isNaN(baselineValue) && baselineValue > -1000) {
           difference = value - baselineValue;
+          percentage_diff = (difference / baselineValue) * 100;
         }
       }
       
@@ -170,7 +172,7 @@ export function rasterToGridPoints(
         lat,
         lng,
         value: Number(value),
-        difference: Number(difference),
+        difference: Number(percentage_diff),
       });
     }
   }

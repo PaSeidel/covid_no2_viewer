@@ -7,6 +7,7 @@ import {
   getGridDataAsync,
   GridPoint,
   City,
+  getPercentageChange,
 } from "../lib/no2Data";
 import { GeoTIFFDataSource } from "../lib/geotiffDataSource";
 
@@ -82,7 +83,7 @@ export function MapViewer({
         }
         return {
           ...m,
-          difference: getMeasurementDifference(m, baselineData),
+          difference: getPercentageChange(m, baselineData),
           isSignificant: m.pValue < 0.05,
           city
         };
@@ -336,16 +337,32 @@ export function MapViewer({
   // Get color based on difference from baseline
   const getColorForDifference = (diff: number): string => {
   // NO2 difference in mol/m²
-  // Typical NO2 column densities: ~1e-5 to 1e-4 mol/m²
-  // Meaningful changes: ~1e-6 mol/m² or larger
   // Green for decrease (good), red for increase (bad)
-  if (diff < -5e-6) return "rgba(34, 197, 94, 0.3)";   // Strong decrease - dark green
-  if (diff < -2e-6) return "rgba(134, 239, 172, 0.3)"; // Moderate decrease - light green
-  if (diff < -1e-6) return "rgba(187, 247, 208, 0.3)"; // Slight decrease - very light green
-  if (diff < 1e-6) return "rgba(229, 231, 235, 0.3)";  // No significant change - gray
-  if (diff < 2e-6) return "rgba(254, 215, 170, 0.3)";  // Slight increase - light orange
-  if (diff < 5e-6) return "rgba(251, 146, 60, 0.3)";   // Moderate increase - orange
-  return "rgba(239, 68, 68, 0.3)";                      // Strong increase - red
+  
+  const minDiff = -50;  // Strong decrease - dark green (34, 197, 94)
+  const maxDiff = 50;   // Strong increase - red (239, 68, 68)
+  
+  // Normalize difference to 0-1 range
+  let normalized = (diff - minDiff) / (maxDiff - minDiff);
+  normalized = Math.max(0, Math.min(1, normalized)); // Clamp to [0, 1]
+  
+  let r, g, b;
+  
+  if (normalized < 0.5) {
+    // Dark green (34, 197, 94) to Gray (229, 231, 235)
+    const t = normalized * 2; // 0 to 1
+    r = Math.round(34 + (229 - 34) * t);
+    g = Math.round(197 + (231 - 197) * t);
+    b = Math.round(94 + (235 - 94) * t);
+  } else {
+    // Gray (229, 231, 235) to Red (239, 68, 68)
+    const t = (normalized - 0.5) * 2; // 0 to 1
+    r = Math.round(229 + (239 - 229) * t);
+    g = Math.round(231 + (68 - 231) * t);
+    b = Math.round(235 + (68 - 235) * t);
+  }
+  
+  return `rgba(${r}, ${g}, ${b}, 0.7)`;
 };
 
 // Draw measurement overlay
