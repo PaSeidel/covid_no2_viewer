@@ -1,9 +1,38 @@
 
-  # TODO update readme
+# Project Description
 
-  ## Running the code
+# Setup
 
-  Run `npm i` to install the dependencies.
+## Docker configuration
 
-  Run `npm run dev` to start the development server.
-  
+### Local Data
+
+### Fetch data on startup
+
+## Run without docker
+
+Run `npm i` to install the dependencies.
+
+Run `npm run dev` to start the development server.
+
+# Documentation
+
+## Data Source
+
+### Germany Polygon
+
+### City Data
+
+### Incidence Data
+
+## Data Preparation
+
+### Statistical Tests
+
+## Implementational Details
+
+### UI and Frontend
+
+### Data import
+
+### Efficient Rendering
