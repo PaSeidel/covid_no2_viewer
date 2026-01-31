@@ -52,7 +52,7 @@ export async function loadGeoTIFF(url: string): Promise<{
     const width = image.getWidth();
     const height = image.getHeight();
     const bbox = image.getBoundingBox() as [number, number, number, number];
-    
+
     const pixelScale = [
       (bbox[2] - bbox[0]) / width,
       (bbox[3] - bbox[1]) / height,
