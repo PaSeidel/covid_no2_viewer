@@ -47,6 +47,7 @@ export function MapViewer({
   const [measurements, setMeasurements] = useState<any[]>([]);
   const [gridData, setGridData] = useState<GridPoint[]>([]);
   const [cities, setCities] = useState<City[]>([]);
+  const needsRedrawRef = useRef(false);
 
   // Load cities once on mount
   useEffect(() => {
@@ -234,6 +235,29 @@ export function MapViewer({
 
     return () => {
       window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  // Redraw map when page becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        needsRedrawRef.current = true;
+        // Use requestAnimationFrame to trigger redraw after browser is ready
+        requestAnimationFrame(() => {
+          if (needsRedrawRef.current) {
+            needsRedrawRef.current = false;
+            // Force redraw by triggering a minimal state update
+            setViewState(prev => ({ ...prev, zoom: prev.zoom }));
+          }
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
