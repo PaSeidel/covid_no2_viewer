@@ -13,6 +13,8 @@ def create_detailed_city_timepoints(
         output_folder='../public/city_data/',
         no2_daily_folder='../public/no2_daily/'
     ):
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
     cities_geojson = gpd.read_file(input_geojson)
     
     # Load incidence data for COVID era

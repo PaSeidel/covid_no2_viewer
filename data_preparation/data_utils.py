@@ -115,7 +115,7 @@ def calculate_no2_significance(
         print(f"Warning: Could not extract data for target period {target_period}")
         return {
             'significant': False,
-            'p_value': 0.0,
+            'p_value': 1.0,
             'interpretation': "Insufficient data for this month for a statistical test."
         }
     
@@ -125,7 +125,7 @@ def calculate_no2_significance(
         print(f"  Target days: {len(target_daily)}, Baseline days: {len(baseline_daily_all)}")
         return {
             'significant': False,
-            'p_value': 0.0,
+            'p_value': 1.0,
             'interpretation': "Insufficient data for this month for a statistical test."
         }
     
