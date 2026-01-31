@@ -31,6 +31,7 @@ RUN mkdir -p public \
 # Copy startup script
 # COPY data-preparation.sh /usr/local/bin/
 # RUN chmod +x /usr/local/bin/data-preparation.sh
+# ENTRYPOINT ["data-preparation.sh"]
 # === END ===
 
 # Install dependencies
@@ -41,5 +42,4 @@ COPY src ./src
 
 EXPOSE 3000
 
-# ENTRYPOINT ["data-preparation.sh"]
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "dev", "--", "--host"]

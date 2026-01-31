@@ -77,45 +77,6 @@ export async function loadGeoTIFF(url: string): Promise<{
 }
 
 /**
- * Loads a GeoTIFF from an ArrayBuffer (for file uploads)
- */
-export async function loadGeoTIFFFromBuffer(buffer: ArrayBuffer): Promise<{
-  metadata: GeoTIFFMetadata;
-  data: Float32Array | Int32Array | Uint16Array;
-}> {
-  try {
-    const tiff = await fromArrayBuffer(buffer);
-    const image = await tiff.getImage();
-    const rasters = await image.readRasters();
-    
-    const width = image.getWidth();
-    const height = image.getHeight();
-    const bbox = image.getBoundingBox() as [number, number, number, number];
-    
-    const pixelScale = [
-      (bbox[2] - bbox[0]) / width,
-      (bbox[3] - bbox[1]) / height,
-    ] as [number, number];
-    
-    const metadata: GeoTIFFMetadata = {
-      width,
-      height,
-      bbox,
-      pixelScale,
-      origin: [bbox[0], bbox[3]],
-    };
-    
-    return {
-      metadata,
-      data: rasters[0] as Float32Array | Int32Array | Uint16Array,
-    };
-  } catch (error) {
-    console.error('Error loading GeoTIFF from buffer:', error);
-    throw error;
-  }
-}
-
-/**
  * Converts raster data to grid points for visualization
  * @param data - Raster data from GeoTIFF
  * @param metadata - GeoTIFF metadata
@@ -180,88 +141,6 @@ export function rasterToGridPoints(
   return gridPoints;
 }
 
-/**
- * Samples a value from raster data at a specific lat/lng coordinate
- * Uses nearest neighbor interpolation
- */
-export function sampleRasterAtLocation(
-  lat: number,
-  lng: number,
-  data: Float32Array | Int32Array | Uint16Array,
-  metadata: GeoTIFFMetadata
-): number | null {
-  const { width, height, origin, pixelScale } = metadata;
-  
-  // Convert lat/lng to pixel coordinates
-  const x = Math.round((lng - origin[0]) / pixelScale[0]);
-  const y = Math.round((origin[1] - lat) / pixelScale[1]);
-  
-  // Check if coordinates are within bounds
-  if (x < 0 || x >= width || y < 0 || y >= height) {
-    return null;
-  }
-  
-  const index = y * width + x;
-  const value = data[index];
-  
-  // Check for NoData
-  if (value === -9999 || isNaN(value) || value < -1000) {
-    return null;
-  }
-  
-  return Number(value);
-}
-
-/**
- * Samples with bilinear interpolation for smoother results
- */
-export function sampleRasterBilinear(
-  lat: number,
-  lng: number,
-  data: Float32Array | Int32Array | Uint16Array,
-  metadata: GeoTIFFMetadata
-): number | null {
-  const { width, height, origin, pixelScale } = metadata;
-  
-  // Convert lat/lng to pixel coordinates (floating point)
-  const fx = (lng - origin[0]) / pixelScale[0];
-  const fy = (origin[1] - lat) / pixelScale[1];
-  
-  // Get the four surrounding pixels
-  const x0 = Math.floor(fx);
-  const y0 = Math.floor(fy);
-  const x1 = x0 + 1;
-  const y1 = y0 + 1;
-  
-  // Check bounds
-  if (x0 < 0 || x1 >= width || y0 < 0 || y1 >= height) {
-    return null;
-  }
-  
-  // Get values at four corners
-  const v00 = data[y0 * width + x0];
-  const v10 = data[y0 * width + x1];
-  const v01 = data[y1 * width + x0];
-  const v11 = data[y1 * width + x1];
-  
-  // Check for NoData values
-  if ([v00, v10, v01, v11].some(v => v === -9999 || isNaN(v) || v < -1000)) {
-    // Fall back to nearest neighbor if any corner is NoData
-    return sampleRasterAtLocation(lat, lng, data, metadata);
-  }
-  
-  // Bilinear interpolation weights
-  const wx = fx - x0;
-  const wy = fy - y0;
-  
-  const value = 
-    v00 * (1 - wx) * (1 - wy) +
-    v10 * wx * (1 - wy) +
-    v01 * (1 - wx) * wy +
-    v11 * wx * wy;
-  
-  return Number(value);
-}
 
 /**
  * Loads time-series GeoTIFF data
