@@ -559,6 +559,21 @@ useEffect(() => {
           <Minus className="w-5 h-5" />
         </button>
       </div>
+
+      {/* OpenStreetMap Attribution - Required by OSM Tile Usage Policy */}
+      <div
+        className="absolute z-10 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-xs shadow-md"
+        style={{ bottom: '0.1rem', right: '0.1rem' }}
+      >
+        <a
+          href="https://www.openstreetmap.org/copyright"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-gray-700 hover:text-gray-900 hover:underline"
+        >
+          © OpenStreetMap contributors
+        </a>
+      </div>
     </div>
   );
 }
