@@ -231,21 +231,40 @@ export function MapViewer({
 
     handleResize();
     window.addEventListener("resize", handleResize);
-    
+
     return () => {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
 
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    // Handle both mouse wheel and trackpad gestures
-    const delta = e.deltaY > 0 ? -0.5 : 0.5;
-    setViewState((prev) => ({
-      ...prev,
-      zoom: Math.max(6, Math.min(10, prev.zoom + delta)),
-    }));
-  };
+  // Add non-passive wheel event listener to prevent browser zoom
+  useEffect(() => {
+    const overlayCanvas = overlayCanvasRef.current;
+    if (!overlayCanvas) return;
+
+    const wheelHandler = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Normalize deltaY and apply much smaller sensitivity
+      // Trackpad deltaY can range from 1-100+, mouse wheel is typically larger
+      // Using very small sensitivity for smooth, gradual zoom like Google Maps
+      const sensitivity = 0.1; // Fine-tune this for desired zoom speed
+      const delta = -e.deltaY * sensitivity;
+
+      setViewState((prev) => ({
+        ...prev,
+        zoom: Math.max(6, Math.min(10, prev.zoom + delta)),
+      }));
+    };
+
+    // Use non-passive listener to ensure preventDefault works
+    overlayCanvas.addEventListener("wheel", wheelHandler, { passive: false });
+
+    return () => {
+      overlayCanvas.removeEventListener("wheel", wheelHandler);
+    };
+  }, []);
 
   const handleZoomIn = () => {
     setViewState((prev) => ({
@@ -521,25 +540,26 @@ useEffect(() => {
   };
 
   return (
-    <div className="absolute inset-0">
+    <div
+      className="absolute inset-0"
+      style={{ touchAction: 'none' }}
+    >
       <canvas
         ref={canvasRef}
         className="absolute inset-0"
-        onWheel={handleWheel}
-        style={{ cursor: isDragging ? "grabbing" : "grab" }}
+        style={{ cursor: isDragging ? "grabbing" : "grab", touchAction: 'none' }}
       />
       <canvas
         ref={overlayCanvasRef}
         className="absolute inset-0"
         width={window.innerWidth}
         height={window.innerHeight}
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onClick={handleClick}
-        style={{ cursor: isDragging ? "grabbing" : "grab", mixBlendMode: "multiply" }}
+        style={{ cursor: isDragging ? "grabbing" : "grab", mixBlendMode: "multiply", touchAction: 'none' }}
       />
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
         <button
