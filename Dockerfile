@@ -37,11 +37,18 @@ CMD ["npm", "run", "dev", "--", "--host"]
 # Stage 2: Extended image with data pipeline support (heavier)
 FROM app AS pipeline
 
-# Install Python and git for data pipeline
+# Install Python, git, and geospatial system dependencies for data pipeline
 RUN apk add --no-cache \
     python3 \
     py3-pip \
-    git
+    git \
+    gdal-dev \
+    geos-dev \
+    proj-dev \
+    gcc \
+    g++ \
+    musl-dev \
+    python3-dev
 
 # Copy Python preprocessing scripts and dependencies
 COPY data_preparation ./data_preparation
