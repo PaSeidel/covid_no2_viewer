@@ -47,6 +47,7 @@ export function MapViewer({
   const [measurements, setMeasurements] = useState<any[]>([]);
   const [gridData, setGridData] = useState<GridPoint[]>([]);
   const [cities, setCities] = useState<City[]>([]);
+  const needsRedrawRef = useRef(false);
 
   // Load cities once on mount
   useEffect(() => {
@@ -231,21 +232,63 @@ export function MapViewer({
 
     handleResize();
     window.addEventListener("resize", handleResize);
-    
+
     return () => {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
 
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    // Handle both mouse wheel and trackpad gestures
-    const delta = e.deltaY > 0 ? -0.5 : 0.5;
-    setViewState((prev) => ({
-      ...prev,
-      zoom: Math.max(6, Math.min(10, prev.zoom + delta)),
-    }));
-  };
+  // Redraw map when page becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        needsRedrawRef.current = true;
+        // Use requestAnimationFrame to trigger redraw after browser is ready
+        requestAnimationFrame(() => {
+          if (needsRedrawRef.current) {
+            needsRedrawRef.current = false;
+            // Force redraw by triggering a minimal state update
+            setViewState(prev => ({ ...prev, zoom: prev.zoom }));
+          }
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  // Add non-passive wheel event listener to prevent browser zoom
+  useEffect(() => {
+    const overlayCanvas = overlayCanvasRef.current;
+    if (!overlayCanvas) return;
+
+    const wheelHandler = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Normalize deltaY and apply much smaller sensitivity
+      // Trackpad deltaY can range from 1-100+, mouse wheel is typically larger
+      // Using very small sensitivity for smooth, gradual zoom like Google Maps
+      const sensitivity = 0.1; // Fine-tune this for desired zoom speed
+      const delta = -e.deltaY * sensitivity;
+
+      setViewState((prev) => ({
+        ...prev,
+        zoom: Math.max(6, Math.min(10, prev.zoom + delta)),
+      }));
+    };
+
+    // Use non-passive listener to ensure preventDefault works
+    overlayCanvas.addEventListener("wheel", wheelHandler, { passive: false });
+
+    return () => {
+      overlayCanvas.removeEventListener("wheel", wheelHandler);
+    };
+  }, []);
 
   const handleZoomIn = () => {
     setViewState((prev) => ({
@@ -294,7 +337,6 @@ export function MapViewer({
     setIsDragging(false);
   };
 
-  // Convert lat/lng to screen coordinates
   const latLngToScreen = (lat: number, lng: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
@@ -375,7 +417,7 @@ useEffect(() => {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // ===== OPTIMIZED GRID RENDERING =====
+  // ===== OPTIMIZED GRID RENDERING WITH MERCATOR CORRECTION =====
   if (gridData.length > 0) {
     // Find unique lat/lng values to determine grid structure
     const lats = gridData.map(p => p.lat);
@@ -398,7 +440,7 @@ useEffect(() => {
       // Create lookup map for quick access
       const pointMap = new Map();
       gridData.forEach(point => {
-        const key = `${point.lat.toFixed(6)},${point.lng.toFixed(6)}`;
+        const key = `${point.lat},${point.lng}`;
         pointMap.set(key, point);
       });
 
@@ -407,7 +449,7 @@ useEffect(() => {
         for (let col = 0; col < gridWidth; col++) {
           const lat = uniqueLats[row];
           const lng = uniqueLngs[col];
-          const key = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+          const key = `${lat},${lng}`;
           const point = pointMap.get(key);
 
           if (point) {
@@ -427,38 +469,60 @@ useEffect(() => {
 
       offscreenCtx.putImageData(imageData, 0, 0);
 
-      // Get screen coordinates for the grid bounds
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      // Render row-by-row to handle Mercator projection correctly
+      for (let row = 0; row < gridHeight; row++) {
+        const lat = uniqueLats[row];
+        const nextLat = row < gridHeight - 1 ? uniqueLats[row + 1] : lat;
+        
+        // Get screen positions for this row
+        const rowTopLeft = latLngToScreen(lat, uniqueLngs[0]);
+        const rowTopRight = latLngToScreen(lat, uniqueLngs[uniqueLngs.length - 1]);
+        const rowBottomLeft = latLngToScreen(nextLat, uniqueLngs[0]);
+        
+        // Skip if coordinates are invalid
+        if (!rowTopLeft || !rowTopRight || !rowBottomLeft ||
+            !isFinite(rowTopLeft.x) || !isFinite(rowTopLeft.y) ||
+            !isFinite(rowTopRight.x) || !isFinite(rowTopRight.y) ||
+            !isFinite(rowBottomLeft.x) || !isFinite(rowBottomLeft.y)) {
+          continue;
+        }
+        
+        const rowWidth = rowTopRight.x - rowTopLeft.x;
+        const rowHeight = rowBottomLeft.y - rowTopLeft.y;
+        
+        // Only draw if dimensions are valid and positive
+        if (rowWidth > 0 && rowHeight > 0) {
+          ctx.drawImage(
+            offscreenCanvas,
+            0, row,              // Source: x, y (start at column 0, this row)
+            gridWidth, 1,        // Source: width, height (full width, 1 pixel tall)
+            rowTopLeft.x,        // Dest: x
+            rowTopLeft.y,        // Dest: y
+            rowWidth,            // Dest: width (scaled to screen)
+            rowHeight            // Dest: height (scaled for this latitude)
+          );
+        }
+      }
+
+      // Debug logging (optional - remove in production)
       const topLeft = latLngToScreen(uniqueLats[0], uniqueLngs[0]);
       const bottomRight = latLngToScreen(
         uniqueLats[uniqueLats.length - 1],
         uniqueLngs[uniqueLngs.length - 1]
       );
-
-      if (topLeft && bottomRight && 
-          isFinite(topLeft.x) && isFinite(topLeft.y) &&
-          isFinite(bottomRight.x) && isFinite(bottomRight.y)) {
-        
-        const screenWidth = bottomRight.x - topLeft.x;
-        const screenHeight = bottomRight.y - topLeft.y;
-
-        // Draw with smooth interpolation
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        
-        ctx.drawImage(
-          offscreenCanvas,
-          topLeft.x,
-          topLeft.y,
-          screenWidth,
-          screenHeight
-        );
-
-        // Optional: Apply slight blur for extra smoothness
-        ctx.save();
-        ctx.globalAlpha = 1;
-        ctx.drawImage(canvas, 0, 0);
-        ctx.restore();
-        ctx.filter = 'none';
+      
+      if (topLeft && bottomRight) {
+        console.log('Grid bounds:', {
+          topLeft: { lat: uniqueLats[0], lng: uniqueLngs[0] },
+          bottomRight: { lat: uniqueLats[uniqueLats.length - 1], lng: uniqueLngs[uniqueLngs.length - 1] },
+          screenTopLeft: topLeft,
+          screenBottomRight: bottomRight,
+          gridWidth,
+          gridHeight
+        });
       }
     }
   }
@@ -521,25 +585,26 @@ useEffect(() => {
   };
 
   return (
-    <div className="absolute inset-0">
+    <div
+      className="absolute inset-0"
+      style={{ touchAction: 'none' }}
+    >
       <canvas
         ref={canvasRef}
         className="absolute inset-0"
-        onWheel={handleWheel}
-        style={{ cursor: isDragging ? "grabbing" : "grab" }}
+        style={{ cursor: isDragging ? "grabbing" : "grab", touchAction: 'none' }}
       />
       <canvas
         ref={overlayCanvasRef}
         className="absolute inset-0"
         width={window.innerWidth}
         height={window.innerHeight}
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onClick={handleClick}
-        style={{ cursor: isDragging ? "grabbing" : "grab", mixBlendMode: "multiply" }}
+        style={{ cursor: isDragging ? "grabbing" : "grab", mixBlendMode: "multiply", touchAction: 'none' }}
       />
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
         <button
@@ -558,6 +623,21 @@ useEffect(() => {
         >
           <Minus className="w-5 h-5" />
         </button>
+      </div>
+
+      {/* OpenStreetMap Attribution - Required by OSM Tile Usage Policy */}
+      <div
+        className="absolute z-10 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-xs shadow-md"
+        style={{ bottom: '0.1rem', right: '0.1rem' }}
+      >
+        <a
+          href="https://www.openstreetmap.org/copyright"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-gray-700 hover:text-gray-900 hover:underline"
+        >
+          © OpenStreetMap contributors
+        </a>
       </div>
     </div>
   );

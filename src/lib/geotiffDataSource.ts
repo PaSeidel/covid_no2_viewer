@@ -1,15 +1,12 @@
 import {
   loadTimeSeriesGeoTIFF,
-  loadGeoTIFF,
   rasterToGridPoints,
-  sampleRasterBilinear,
   geotiffCache,
   GeoTIFFMetadata,
 } from './geotiffLoader';
 import {
   GridPoint,
   CityTimepoint,
-  MAJOR_GERMAN_CITIES,
   City,
   DataSourceConfig,
 } from './no2Data';
@@ -45,7 +42,7 @@ export class GeoTIFFDataSource {
     metadata: GeoTIFFMetadata;
     data: Float32Array | Int32Array | Uint16Array;
   } | null = null;
-  private cities: City[] = MAJOR_GERMAN_CITIES;
+  private cities: City[] = [];
 
   constructor(config: DataSourceConfig) {
     this.config = config;
@@ -69,11 +66,6 @@ export class GeoTIFFDataSource {
    * Load cities data from JSON file
    */
   async loadCities(): Promise<void> {
-    if (!this.config.citiesDataUrl) {
-      // Use default cities if no URL provided
-      this.cities = MAJOR_GERMAN_CITIES;
-      return;
-    }
 
     try {
       const url = `${this.config.citiesDataUrl}/cities.json`;
@@ -81,7 +73,7 @@ export class GeoTIFFDataSource {
       this.cities = data;
     } catch (error) {
       console.warn('Failed to load cities data, using defaults:', error);
-      this.cities = MAJOR_GERMAN_CITIES;
+      this.cities = [];
     }
   }
 
@@ -151,13 +143,5 @@ export class GeoTIFFDataSource {
    */
   getCities(): City[] {
     return this.cities;
-  }
-
-  /**
-   * Clear all cached data
-   */
-  clearCache(): void {
-    geotiffCache.clear();
-    this.baselineData = null;
   }
 }
