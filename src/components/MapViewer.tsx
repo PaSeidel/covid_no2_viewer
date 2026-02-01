@@ -341,7 +341,7 @@ export function MapViewer({
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
 
-    const zoom = viewState.zoom;
+    const zoom = Math.floor(viewState.zoom);
     const n = Math.pow(2, zoom);
 
     const worldX = ((lng + 180) / 360) * n * 256;
