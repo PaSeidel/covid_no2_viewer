@@ -1,4 +1,5 @@
 import os
+import shutil
 import calendar
 import rasterio
 import numpy as np
@@ -284,4 +285,43 @@ def _generate_interpretation(is_significant, p_value, percent_change, cohens_d):
     direction = "decrease" if percent_change < 0 else "increase"
     
     return f"{sig_text}, {effect_text} (d={cohens_d:.2f})"
+
+
+def copy_cdse_responses_into_one_dir(base_dir, output_dir):
+    """
+    Find all response.tiff files in the directory structure.
+    Returns dict: {date_str: tiff_path}
+    """
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    tiff_files = {}
+    
+    for date_dir in sorted(base_dir.iterdir()):
+        if not date_dir.is_dir():
+            continue
+            
+        # Date format: YYYY-MM-DD
+        date_str = date_dir.name
+        
+        try:
+            # Find the hash subdirectory (should be only one)
+            hash_dirs = [d for d in date_dir.iterdir() if d.is_dir()]
+            
+            if len(hash_dirs) != 1:
+                print(f"Warning: Expected 1 subdirectory in {date_dir}, found {len(hash_dirs)}")
+                continue
+            
+            hash_dir = hash_dirs[0]
+            tiff_path = hash_dir / 'response.tiff'
+            
+            if tiff_path.exists():
+                tiff_files[date_str] = output_dir / f"no2_data_{date_str}.tif"
+                shutil.copy(tiff_path, tiff_files[date_str])
+            else:
+                print(f"Warning: No response.tiff found in {hash_dir}")
+                
+        except Exception as e:
+            print(f"Error processing {date_dir}: {e}")
+    
+    return tiff_files
 
