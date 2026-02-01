@@ -57,7 +57,7 @@ def download_tropomi_data(
 
     for i, (t_from, t_to) in enumerate(daily_intervals):
 
-        print(f"Downloading: {t_from} -> {t_to}")
+        print(f"Downloading: {t_from} -> {t_to}", flush=True)
 
         # Build request
         request_raw = SentinelHubRequest(
