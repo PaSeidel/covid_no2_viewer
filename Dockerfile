@@ -25,12 +25,19 @@ RUN mkdir -p public \
 # COPY data_preparation ./data_preparation
 
 # Install Python dependencies
-# COPY ./requirements.txt ./requirements.txt
-# RUN pip install -r requirements.txt --no-cache-dir
+# RUN pip install -r data_preparation/requirements.txt --no-cache-dir --break-system-packages
 
-# Copy startup script
-# COPY data-preparation.sh /usr/local/bin/
-# RUN chmod +x /usr/local/bin/data-preparation.sh
+# Copy .env file (must be created from .env.template)
+# COPY .env .env
+
+# Run the download script to fetch NO2 data
+# RUN python3 data_preparation/download_sentinel5P_no2_data.py /tmp/no2_daily
+
+# Clone Covid-19 Incidence Data from RKI GitHub
+# RUN git clone https://github.com/robert-koch-institut/COVID-19_7-Tage-Inzidenz_in_Deutschland.git /tmp/covid_data
+
+# Run post-processing script
+#TODO
 # === END ===
 
 # Install dependencies
