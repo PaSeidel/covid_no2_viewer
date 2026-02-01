@@ -1,11 +1,8 @@
-FROM node:18-alpine
+# Stage 1: Base application with local data (lightweight)
+FROM node:18-alpine AS app
 
-# Install system dependencies
-RUN apk add --no-cache \
-    python3 \
-    py3-pip \
-    git \
-    unzip
+# Install minimal dependencies
+RUN apk add --no-cache unzip
 
 WORKDIR /app
 
@@ -23,12 +20,6 @@ RUN mkdir -p public \
     && unzip data.zip -d public \
     && rm data.zip
 
-# Copy Python preprocessing scripts and dependencies
-COPY data_preparation ./data_preparation
-
-# Install Python dependencies for data pipeline
-RUN pip install -r data_preparation/requirements.txt --no-cache-dir --break-system-packages
-
 # Copy application source code
 COPY src ./src
 
@@ -40,4 +31,24 @@ EXPOSE 3000
 
 # Use entrypoint script to handle runtime options
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "dev", "--", "--host"]
+
+
+# Stage 2: Extended image with data pipeline support (heavier)
+FROM app AS pipeline
+
+# Install Python and git for data pipeline
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    git
+
+# Copy Python preprocessing scripts and dependencies
+COPY data_preparation ./data_preparation
+
+# Install Python dependencies for data pipeline
+RUN pip install -r data_preparation/requirements.txt --no-cache-dir --break-system-packages
+
+# Entrypoint and CMD inherited from base stage
+
+FROM app
