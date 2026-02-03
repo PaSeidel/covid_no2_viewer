@@ -124,7 +124,7 @@ def create_detailed_city_timepoints(
                 city_name = city['GeografischerName_GEN']
                 
                 # Calculate NO2 only
-                no2_value = calculate_period_no2_coord_polygon(city.geometry, period_str, '../public/data/')
+                no2_value = calculate_period_no2_coord_polygon(city.geometry, period_str, no2_monthly_folder)
                 
                 city_timepoints.append({
                     'cityName': city_name,
