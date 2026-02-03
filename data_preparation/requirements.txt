@@ -1,5 +1,11 @@
 # Data preparation dependencies for COVID-19 and NO2 analysis
 
+# Sentinel Hub API
+sentinelhub>=3.9.0
+
+# Environment Variables
+python-dotenv>=1.0.0
+
 # GIS and Raster Data Processing
 geopandas>=0.12.0
 rasterio>=1.3.0

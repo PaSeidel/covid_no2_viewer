@@ -1,17 +1,19 @@
 import os
+import sys
 import json
 import stat
 import pandas as pd
 from tqdm import tqdm
 import geopandas as gpd
-from data_utils import calculate_period_no2_coord_polygon, calculate_no2_significance
+from data_utils import calculate_period_no2_coord_polygon, calculate_no2_significance, copy_cdse_responses_into_one_dir
 
 # Create detailed city_data/city_timepoints_YYYY_MM.json files
 def create_detailed_city_timepoints(
-        input_geojson='cities_major.geojson', 
+        input_geojson='cities_major.geojson',
         incidence_csv='COVID-19-Faelle_7-Tage-Inzidenz_Landkreise.csv',
         output_folder='../public/city_data/',
-        no2_daily_folder='../public/no2_daily/'
+        no2_daily_folder='../public/no2_daily/',
+        no2_monthly_folder='../public/data/'
     ):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -98,7 +100,7 @@ def create_detailed_city_timepoints(
                 incidence_value = city_incidence_data['incidence'].mean() if len(city_incidence_data) > 0 else 0.0
                 
                 # Calculate NO2
-                no2_value = calculate_period_no2_coord_polygon(city.geometry, period_str, '../public/data/')
+                no2_value = calculate_period_no2_coord_polygon(city.geometry, period_str, no2_monthly_folder)
                 
                 # Significance test
                 stat_test = calculate_no2_significance(
@@ -122,7 +124,7 @@ def create_detailed_city_timepoints(
                 city_name = city['GeografischerName_GEN']
                 
                 # Calculate NO2 only
-                no2_value = calculate_period_no2_coord_polygon(city.geometry, period_str, '../public/data/')
+                no2_value = calculate_period_no2_coord_polygon(city.geometry, period_str, no2_monthly_folder)
                 
                 city_timepoints.append({
                     'cityName': city_name,
@@ -158,6 +160,46 @@ def create_lightweight_city_data(
         json.dump(cities_light, f)
 
 if __name__ == "__main__":
-    # create_lightweight_city_data()
-    create_detailed_city_timepoints(output_folder='../public/city_data_new/',
-                                    no2_daily_folder='../public/no2_daily/')
+    # Parse command line arguments
+    if len(sys.argv) != 6:
+        print("Usage: python calculate_city_data.py <cities_geojson> <incidence_csv> <output_city_data_folder> <no2_monthly_folder> <no2_daily_folder>")
+        print("Example: python calculate_city_data.py cities_major.geojson /tmp/covid_data/COVID-19-Faelle_7-Tage-Inzidenz_Landkreise.csv /app/public/city_data /app/public/data /app/public/no2_daily")
+        sys.exit(1)
+
+    cities_geojson = sys.argv[1]
+    incidence_csv = sys.argv[2]
+    output_city_data_folder = sys.argv[3]
+    no2_monthly_folder = sys.argv[4]
+    no2_daily_folder = sys.argv[5]
+
+    print("="*80)
+    print("CITY DATA CALCULATION")
+    print("="*80)
+    print(f"Cities GeoJSON: {cities_geojson}")
+    print(f"Incidence CSV: {incidence_csv}")
+    print(f"Output folder: {output_city_data_folder}")
+    print(f"NO2 monthly folder: {no2_monthly_folder}")
+    print(f"NO2 daily folder: {no2_daily_folder}")
+    print("="*80)
+
+    # Create lightweight city data
+    cities_json_output = os.path.join(output_city_data_folder, 'cities.json')
+    print("\nCreating lightweight city data...")
+    create_lightweight_city_data(
+        input_geojson=cities_geojson,
+        output_json=cities_json_output
+    )
+
+    # Create detailed city timepoints
+    print("\nCreating detailed city timepoints...")
+    create_detailed_city_timepoints(
+        input_geojson=cities_geojson,
+        incidence_csv=incidence_csv,
+        output_folder=output_city_data_folder,
+        no2_daily_folder=no2_daily_folder,
+        no2_monthly_folder=no2_monthly_folder
+    )
+
+    print("\n" + "="*80)
+    print("CITY DATA CALCULATION COMPLETE")
+    print("="*80)

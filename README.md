@@ -9,46 +9,9 @@ This project combines satellite data from Sentinel-5P with COVID-19 case data to
 
 # Setup
 
-## Docker configuration
+## Running the Application
 
-The project can be run using Docker with two different data loading strategies:
-
-### Local Data
-
-For deployment with pre-processed data, uncomment the following section in the Dockerfile:
-
-```dockerfile
-# Copy data from zip file and unzip
-RUN apk add --no-cache unzip
-COPY data.zip /app/data.zip
-RUN mkdir -p public \
-    && unzip data.zip -d public \
-    && rm data.zip
-```
-
-This approach requires a `data.zip` file containing the pre-processed NO2 data and city information, which will be unpacked on container startup.
-
-### Fetch data on startup
-
-For dynamic data fetching and processing on container startup, uncomment the data fetch section in the Dockerfile:
-
-```dockerfile
-# Copy Python preprocessing scripts
-COPY data_preparation ./data_preparation
-
-# Install Python dependencies
-COPY ./requirements.txt ./requirements.txt
-RUN pip install -r requirements.txt --no-cache-dir
-
-# Copy startup script
-COPY data-preparation.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/data-preparation.sh
-ENTRYPOINT ["data-preparation.sh"]
-```
-
-This will run the data preparation scripts automatically when the container starts.
-
-## Run without docker
+### Option 1: Local Development
 
 Requires `npm` to be installed. Additionally, the data needs to be unzipped or downloaded using the provided python scripts. The data needs to be placed in a `public` directory located at project-root with the following structure:
 
@@ -65,16 +28,113 @@ public/
 │   ├── no2_data_2019_02.tif
 │   ├── ... (monthly aggregated GeoTIFF files)
 │   └── no2_data_2023_12.tif
-└── no2_daily/ (optional, for data preparation)
-    ├── no2_data_2019-01-01.tif
-    ├── no2_data_2019-01-02.tif
-    └── ... (daily GeoTIFF files)
 ```
 
-Run `npm i` to install the dependencies.
+Run with Node.js directly:
 
-Run `npm run dev` to start the development server.
-The application will be available at `http://localhost:3000`.
+```bash
+npm i
+npm run dev
+```
+
+### Option 2: Docker (with pre-packaged data)
+
+Build and run using the included data.zip (lightweight image):
+
+```bash
+# Build the app target (default, ~200MB)
+docker build --target app -t covid-no2-viewer .
+
+# Or simply:
+docker build -t covid-no2-viewer .
+
+# Run the container
+docker run -p 3000:3000 covid-no2-viewer
+```
+
+The app will start at `http://localhost:3000`
+
+### Option 3: Docker (with fresh data pipeline)
+
+Fetch and process fresh NO2 data from Sentinel-5P at runtime:
+
+1. **Create your .env file:**
+   ```bash
+   cp .env.template .env
+   ```
+
+2. **Add your Sentinel Hub credentials to .env:**
+   ```
+   SENTINELHUB_CLIENT_ID=your_client_id_here
+   SENTINELHUB_CLIENT_SECRET=your_client_secret_here
+   ```
+
+   Get credentials at: https://shapps.dataspace.copernicus.eu/dashboard/#/
+
+3. **Build the pipeline image (includes Python dependencies, ~800MB):**
+   ```bash
+   docker build --target pipeline -t covid-no2-viewer-pipeline .
+   ```
+
+4. **Run with data pipeline:**
+   ```bash
+   docker run -p 3000:3000 \
+     -e RUN_PIPELINE=true \
+     --env-file .env \
+     covid-no2-viewer-pipeline
+   ```
+
+The pipeline will:
+1. Download daily NO2 data from Sentinel-5P (2019-2024)
+2. Clone COVID-19 incidence data from RKI GitHub
+3. Aggregate daily NO2 data to monthly averages
+4. Calculate city-specific statistics and significance tests
+5. Clean up temporary files
+6. Start the web application
+
+**Note:** The data pipeline may take significant time depending on the date range and your internet connection.
+
+## Data Pipeline Architecture
+
+When `RUN_PIPELINE=true`:
+
+```
+1. Download daily NO2 data → /tmp/no2_daily
+2. Clone COVID data → /tmp/covid_data
+3. Postprocess:
+   - Flatten daily files → /tmp/no2_daily_flat
+   - Aggregate to monthly → /app/public/data
+4. Calculate city data → /app/public/city_data
+5. Cleanup temp directories
+6. Start application
+```
+
+## Project Structure
+
+```
+.
+├── src/                      # Frontend application source
+├── data_preparation/         # Data processing scripts
+│   ├── download_sentinel5P_no2_data.py
+│   ├── postprocess_data.py
+│   ├── calculate_city_data.py
+│   ├── data_utils.py
+│   ├── cities_major.geojson
+│   └── requirements.txt
+├── public/
+│   ├── data/                # Monthly NO2 TIFFs
+│   └── city_data/           # City-specific JSON files
+├── Dockerfile
+├── entrypoint.sh           # Runtime entrypoint script
+├── .env.template           # Template for credentials
+└── data.zip                # Pre-packaged data (fallback)
+```
+
+## Environment Variables
+
+- `RUN_PIPELINE`: Set to `true` to run data pipeline at startup
+- `SENTINELHUB_CLIENT_ID`: Your Sentinel Hub client ID (required if RUN_PIPELINE=true)
+- `SENTINELHUB_CLIENT_SECRET`: Your Sentinel Hub client secret (required if RUN_PIPELINE=true)
 
 # Documentation
 
