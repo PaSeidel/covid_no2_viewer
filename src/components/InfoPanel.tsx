@@ -11,6 +11,7 @@ interface InfoPanelProps {
 export function InfoPanel({ selectedCity, currentDate, onClose }: InfoPanelProps) {
   const [cityData, setCityData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     if (!selectedCity) {
@@ -18,16 +19,26 @@ export function InfoPanel({ selectedCity, currentDate, onClose }: InfoPanelProps
       return;
     }
 
-    setLoading(true);
-    getCityDataAsync(selectedCity.name, currentDate)
-      .then(data => {
+    const loadData = async () => {
+      // Only set loading for initial load, use transitioning for updates
+      if (!cityData) {
+        setLoading(true);
+      } else {
+        setIsTransitioning(true);
+      }
+      
+      try {
+        const data = await getCityDataAsync(selectedCity.name, currentDate);
         setCityData(data);
-        setLoading(false);
-      })
-      .catch(error => {
+      } catch (error) {
         console.error('Error loading city data:', error);
+      } finally {
         setLoading(false);
-      });
+        setIsTransitioning(false);
+      }
+    };
+    
+    loadData();
   }, [selectedCity, currentDate]);
 
   if (!selectedCity) return null;
@@ -40,7 +51,7 @@ export function InfoPanel({ selectedCity, currentDate, onClose }: InfoPanelProps
   const absPercentage = Math.abs(percentageChange);
 
   return (
-    <div className="absolute top-6 right-6 bg-white rounded-lg shadow-xl p-6 w-96">
+    <div className={`absolute top-6 right-6 bg-white rounded-lg shadow-xl p-6 w-96 transition-opacity duration-200 ${isTransitioning ? 'opacity-50' : 'opacity-100'}`}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <h3 className="text-sm text-gray-500">Selected City</h3>

@@ -606,7 +606,7 @@ useEffect(() => {
         onClick={handleClick}
         style={{ cursor: isDragging ? "grabbing" : "grab", mixBlendMode: "multiply", touchAction: 'none' }}
       />
-      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+      <div className="absolute z-10 flex flex-col gap-2" style={{ bottom: '1.5rem', left: '1.5rem' }}>
         <button
           className="bg-white hover:bg-gray-100 p-2 rounded-lg shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleZoomIn}
