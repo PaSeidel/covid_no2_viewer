@@ -23,30 +23,16 @@ export async function loadGeoTIFF(url: string): Promise<{
   data: Float32Array | Int32Array | Uint16Array;
 }> {
   try {
-    console.log('1. Fetching from URL:', url);
     const response = await fetch(url);
-    console.log('2. Response status:', response.status);
-    console.log('3. Content-Type:', response.headers.get('content-type'));
     
     const arrayBuffer = await response.arrayBuffer();
-    console.log('4. ArrayBuffer size:', arrayBuffer.byteLength, 'bytes');
+    
     
     // Check first few bytes (TIFF magic number should be 0x4949 or 0x4D4D)
     const view = new DataView(arrayBuffer);
-    const byte1 = view.getUint8(0);
-    const byte2 = view.getUint8(1);
-    console.log('5. First two bytes (hex):', 
-      byte1.toString(16).padStart(2, '0'), 
-      byte2.toString(16).padStart(2, '0')
-    );
-    console.log('6. Expected: 49 49 (little-endian) or 4d 4d (big-endian)');
     
     const tiff = await fromArrayBuffer(arrayBuffer);
-    console.log('7. TIFF parsed successfully');
-    
     const image = await tiff.getImage();
-    console.log('8. Image loaded');
-    
     const rasters = await image.readRasters();
     
     const width = image.getWidth();

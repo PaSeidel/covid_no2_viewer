@@ -4,12 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 interface TimelineControlProps {
   currentDate: Date;
   onDateChange: (date: Date) => void;
+  // Add data prop for the time series
+  data?: { date: Date; value: number }[];
 }
 
 const START_DATE = new Date('2020-03-01');
 const END_DATE = new Date('2024-12-01');
 
-export function TimelineControl({ currentDate, onDateChange }: TimelineControlProps) {
+export function TimelineControl({ currentDate, onDateChange, data = [] }: TimelineControlProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const intervalRef = useRef<number | null>(null);
 
@@ -51,7 +53,7 @@ export function TimelineControl({ currentDate, onDateChange }: TimelineControlPr
           }
           return valueToDate(nextValue);
         });
-      }, 500); // Advance every 500ms
+      }, 500);
     } else {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -73,6 +75,30 @@ export function TimelineControl({ currentDate, onDateChange }: TimelineControlPr
     });
   };
 
+  // Generate line chart path
+  const generateLinePath = () => {
+    if (data.length === 0) return '';
+
+    const width = 552; // Width matches the slider
+    const height = 50; // Height of the graph area
+
+    // Find min and max values for scaling
+    const values = data.map(d => d.value);
+    const minValue = Math.min(...values);
+    const maxValueData = Math.max(...values);
+    const valueRange = maxValueData - minValue || 1;
+
+    // Generate path
+    const points = data.map((d) => {
+      const monthIndex = dateToValue(d.date);
+      const x = (monthIndex / maxValue) * width;
+      const y = height - ((d.value - minValue) / valueRange) * height;
+      return `${x},${y}`;
+    });
+
+    return `M ${points.join(' L ')}`;
+  };
+
   return (
     <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white rounded-lg shadow-xl p-6 w-[600px]">
       <div className="flex items-center gap-4">
@@ -89,6 +115,28 @@ export function TimelineControl({ currentDate, onDateChange }: TimelineControlPr
             <span className="font-medium">{formatDate(currentDate)}</span>
           </div>
           
+          {/* Graph area */}
+          {data.length > 0 && (
+            <div className="mb-2 h-[50px] relative">
+              <span className="absolute -top-1 left-0 text-xs text-gray-500">Total Incidence</span>
+              <svg 
+                width="552" 
+                height="50" 
+                className="w-full"
+              >
+                <path
+                  d={generateLinePath()}
+                  fill="none"
+                  stroke="#3b82f6"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+          )}
+          
+          {/* Slider */}
           <input
             type="range"
             min="0"
@@ -110,7 +158,7 @@ export function TimelineControl({ currentDate, onDateChange }: TimelineControlPr
 
       <div className="mt-4 pt-4 border-t border-gray-200">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-600">Baseline: 2019 </span>
+          <span className="text-gray-600">Baseline: 2019</span>
           <span className="text-gray-600">Showing difference from baseline</span>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { GeoTIFFDataSource } from './geotiffDataSource';
+import covidDataUrl from '../data/covid_data.csv?url';
 
 export interface City {
   name: string;
@@ -19,6 +20,11 @@ export interface GridPoint {
   lng: number;
   value: number;
   difference: number;
+}
+
+interface TotalIncidenceMonthly {
+  date: Date;
+  value: number;
 }
 
 // Data source configuration
@@ -152,4 +158,60 @@ export async function getCityDataAsync(cityName: string, date: Date) {
 export async function getGridDataAsync(date: Date, samplingRate: number = 2): Promise<GridPoint[]> {
   const source = getGeoTIFFDataSource();
   return await source.getGridData(date, samplingRate);
+}
+
+/**
+ * Load monthly COVID-19 incidence data from local file
+ */
+export async function loadMonthlyIncidenceData(): Promise<TotalIncidenceMonthly[]> {
+  // Fetch the CSV file
+  const response = await fetch(covidDataUrl);
+  const text = await response.text();
+  
+  // Parse the CSV (tab-separated)
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split('\t');
+  
+  // Find column indices
+  const dateIndex = headers.indexOf('date');
+  const incidenceIndex = headers.indexOf('incidenceSevenDays');
+  
+  // Parse data rows
+  const dailyData = lines.slice(1).map(line => {
+    const values = line.split('\t');
+    return {
+      date: new Date(values[dateIndex]),
+      incidence: parseFloat(values[incidenceIndex])
+    };
+  });
+  
+  // Group by month and calculate averages
+  const monthlyMap = new Map<string, { sum: number; count: number }>();
+  
+  dailyData.forEach(({ date, incidence }) => {
+    // Create month key (YYYY-MM format)
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    
+    if (!monthlyMap.has(monthKey)) {
+      monthlyMap.set(monthKey, { sum: 0, count: 0 });
+    }
+    
+    const monthData = monthlyMap.get(monthKey)!;
+    monthData.sum += incidence;
+    monthData.count += 1;
+  });
+  
+  // Convert to array of monthly averages
+  const monthlyData: TotalIncidenceMonthly[] = Array.from(monthlyMap.entries()).map(([monthKey, { sum, count }]) => {
+    const [year, month] = monthKey.split('-').map(Number);
+    return {
+      date: new Date(year, month - 1, 1), // First day of the month
+      value: sum / count
+    };
+  });
+  
+  // Sort by date
+  monthlyData.sort((a, b) => a.date.getTime() - b.date.getTime());
+  
+  return monthlyData;
 }

@@ -3,6 +3,11 @@ import { MapViewer } from './components/MapViewer';
 import { TimelineControl } from './components/TimelineControl';
 import { Legend } from './components/Legend';
 import { InfoPanel } from './components/InfoPanel';
+import { loadMonthlyIncidenceData } from './lib/no2Data';
+
+// Load the monthly incidence data once
+const data = await loadMonthlyIncidenceData();
+//
 
 export default function App() {
   const [currentDate, setCurrentDate] = useState<Date>(new Date('2020-03-01'));
@@ -17,6 +22,7 @@ export default function App() {
       <TimelineControl
         currentDate={currentDate}
         onDateChange={setCurrentDate}
+        data={data}
       />
       <Legend />
       <InfoPanel 

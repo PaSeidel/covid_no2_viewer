@@ -13,12 +13,9 @@ import {
 
 // Helper function to fetch JSON with error handling
 async function safeFetchJson(url: string) {
-  console.log('Fetching JSON from:', url);
   const response = await fetch(url);
   
   const contentType = response.headers.get('content-type');
-  console.log('Response status:', response.status);
-  console.log('Content-Type:', contentType);
   
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
