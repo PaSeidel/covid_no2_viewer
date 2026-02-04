@@ -169,9 +169,10 @@ City locations and population data are extracted from the VG250 administrative b
 - Population
 
 **Incidence Data**
-COVID-19 7-day incidence data per district (Landkreis) is sourced from the Robert Koch Institute (RKI):
+COVID-19 7-day incidence data per district (Landkreis) and total incidence is sourced from the Robert Koch Institute (RKI):
 - Source: https://github.com/robert-koch-institut/COVID-19_7-Tage-Inzidenz_in_Deutschland
 - License: [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/deed.de)
+
 
 The incidence data is matched to cities based on the district identifier (AGS - Amtlicher Gemeindeschlüssel) and averaged over each month for display.
 
@@ -208,9 +209,7 @@ Results are stored in the monthly JSON files as `pValue` and `interpretation` fi
 The application is built with:
 - **React 18** with TypeScript for type-safe component development
 - **Vite** as the build tool and development server
-- **Radix UI** for accessible component primitives
 - **Tailwind CSS** for styling
-- **Recharts** for data visualization
 
 Key components:
 - `MapViewer`: Renders OpenStreetMap tiles and overlays NO2 data visualization
