@@ -53,6 +53,7 @@ docker run -p 3000:3000 covid-no2-viewer
 ```
 
 The app will start at `http://localhost:3000`
+Note: if errors occur regarding the `entrypoint.sh` when trying to run the container, the end-of-file sequence may need to be changed from CRLF to LF.
 
 ### Option 3: Docker (with fresh data pipeline)
 
