@@ -1,3 +1,7 @@
+<img width="1534" height="892" alt="Map Overview Wide" src="https://github.com/user-attachments/assets/1736e876-5167-4c65-997d-7aaf59ee1183" />
+
+<img width="1474" height="831" alt="Map Overview Closeup" src="https://github.com/user-attachments/assets/d83fb2fb-e78b-4e37-a1d4-266615e25180" />
+
 
 # Project Description
 
